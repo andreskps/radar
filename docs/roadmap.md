@@ -7,7 +7,7 @@
 | 03 Definición | Hecho (22-11-2026) — 18 RF, 5 RNF, 9 metas |
 | 04 Diseño | Hecho (22-11-2026) |
 | 05 Planificación | Hecho (22-11-2026) |
-| 06 Ejecución | En curso — Fases 0–2 hechas; Fase 3 implementada, falta la prueba en vivo (22-11-2026), ver `docs/fases/` |
+| 06 Ejecución | En curso — Fases 0–2 hechas; Fase 3 hecha (22-11-2026), ver `docs/fases/` |
 
 ## Versiones fijadas (verificadas en npm el 22-11-2026)
 | Paquete | Versión | Nota |
@@ -50,7 +50,7 @@ Esquema Dexie (`architecture.md` §5), programador con ritmo seguro, pausa/reanu
 **Hecho cuando:** un perfil de ~1.000 reels se escanea completo en ≤ 15 min (M1, ajustada en D8); cerrar y abrir Chrome a mitad del escaneo lo reanuda; un re-escaneo trae solo lo nuevo; pruebas de la base con fake-indexeddb pasan.
 
 ### Fase 4 — Etiquetas sobre Instagram
-Badges en cada miniatura (también al hacer scroll y al cambiar de perfil sin recargar), chip del perfil, botón "Escanear con Radar", tooltip con detalle; interruptor para ocultarlas.
+Badges en cada miniatura (también al hacer scroll y al cambiar de perfil sin recargar), chip del perfil, botón "Escanear con Radar", tooltip con detalle; interruptor para ocultarlas. Contador del icono **por pestaña**, según el perfil abierto: avance si se está escaneando, posts guardados si ya se escaneó, vacío si no (pedido del usuario el 22-11-2026, como Viralytics).
 **Hecho cuando:** en un perfil ya escaneado las etiquetas aparecen en ≤ 2 s (M3); en 3 perfiles el multiplicador coincide ±5 % con un cálculo manual en hoja de cálculo (M9); los estilos de Instagram no cambian (comparación de capturas antes/después).
 
 ### Fase 5 — Panel lateral

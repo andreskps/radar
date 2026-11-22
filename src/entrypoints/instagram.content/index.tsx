@@ -35,6 +35,26 @@ function exposeConsoleApi(client: IgClient) {
   };
 }
 
+/**
+ * Puente de pruebas: permite llamar a `radar.*` desde el contexto de la página (herramientas de
+ * prueba automatizada que no ven el contexto aislado). Solo existe en builds con
+ * VITE_RADAR_DEV_BRIDGE=1; el build normal no lo incluye.
+ */
+function exposeDevBridge() {
+  const allowed = new Set(['scan', 'jobs', 'stored', 'pause', 'resume', 'cancel']);
+  window.addEventListener('message', async (e) => {
+    if (e.source !== window || e.data?.source !== 'radar-dev' || !allowed.has(e.data.cmd)) return;
+    const { id, cmd, args = [] } = e.data as { id: string; cmd: string; args?: unknown[] };
+    const api = (globalThis as Record<string, any>).radar;
+    try {
+      const data = await api[cmd](...args);
+      window.postMessage({ source: 'radar-dev-reply', id, ok: true, data }, location.origin);
+    } catch (err) {
+      window.postMessage({ source: 'radar-dev-reply', id, ok: false, message: (err as Error).message }, location.origin);
+    }
+  });
+}
+
 /** Ejecuta las peticiones que pide la cola del service worker. */
 function serveFetches(client: IgClient) {
   browser.runtime.onMessage.addListener((msg: unknown, _sender, sendResponse) => {
@@ -69,6 +89,7 @@ export default defineContentScript({
     const client = createClient();
     exposeConsoleApi(client);
     serveFetches(client);
+    if ((import.meta.env as Record<string, string | undefined>).VITE_RADAR_DEV_BRIDGE === '1') exposeDevBridge();
     const ui = await createShadowRootUi(ctx, {
       name: 'radar-ui',
       position: 'overlay',
