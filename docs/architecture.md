@@ -56,7 +56,7 @@ Versiones exactas fijadas en `roadmap.md` (verificadas en npm el 22-11-2026).
 
 | Pieza | Responsabilidad | Dónde corre |
 |---|---|---|
-| **Lector de Instagram** (`src/ig/`) | Pedir perfil, Reels y posts paginados; normalizar a nuestro modelo. 3 adaptadores en orden: API web → GraphQL → datos embebidos en la página | Content script (necesita las cookies del sitio) |
+| **Lector de Instagram** (`src/ig/`) | Pedir perfil, Reels y posts paginados; normalizar a nuestro modelo. Vías vigentes (verificadas el 22-11-2026, ver D6): ID desde el HTML del perfil → GraphQL de perfil → GraphQL del timeline (todos los posts con fecha) → GraphQL de la pestaña Reels (reproducciones), unidos por código | Content script (necesita las cookies del sitio) |
 | **Programador de escaneo** (`src/scan/`) | Cola de perfiles, ritmo seguro, pausa/reanudación, detección de 429 y de sesión cerrada | Service worker ordena; el content script de una pestaña de Instagram ejecuta las peticiones |
 | **Motor de métricas** (`src/metrics/`) | Multiplicador móvil, niveles, ER, Puntaje Viral, Joya oculta, mejor hora, hashtags, ganchos | Funciones puras; se usan en panel y Centro |
 | **Almacén** (`src/db/`) | Dexie: esquema, migraciones, consultas | Todos los contextos de la extensión |
@@ -132,11 +132,12 @@ Las métricas se recalculan cuando entra un post nuevo del perfil; el Puntaje Vi
 - **D3** Ritmo de escaneo conservador y configurable; se pausa solo ante un 429 de Instagram.
 - **D4** Código 100 % propio; Viralytics solo como referencia funcional.
 - **D5** Instalación manual (modo desarrollador o .zip) para el equipo y los clientes; no se publica en la Web Store.
+- **D6** (22-11-2026, Fase 2) La API v1 de Instagram en la web (`web_profile_info`, `feed/user`, `clips/user`) ya no responde (404 o HTML). El lector usa las mismas consultas GraphQL que la web de Instagram (`/graphql/query` con `doc_id`, tokens `lsd` y `fb_dtsg` de la página). El timeline no trae reproducciones y la pestaña Reels no trae fecha: se leen ambas y se unen por código. Las páginas son de 12. Los `doc_id` cambian con el tiempo: están en `src/ig/queries.ts` y cuando fallan el lector lo dice claramente ("Instagram cambió la consulta de…").
 
 ## 7. Riesgos
 | Riesgo | Mitigación |
 |---|---|
-| Instagram cambia endpoints o `doc_id` | Lector aislado con 3 vías de respaldo; aviso claro en el panel cuando algo falla |
+| Instagram cambia endpoints o `doc_id` | Lector aislado; `doc_id` en un solo archivo (y en Ajustes, Fase 9); error claro cuando la respuesta no tiene el formato esperado. Pasó ya una vez (D6) |
 | Bloqueo temporal de la cuenta | Cuenta secundaria, ritmo lento, pausa automática ante 429 |
 | Va contra los términos de Instagram | Uso interno, sin publicar; asumido por el usuario |
 | Equipos sin GPU: transcripción lenta | WASM como respaldo; transcribir solo los reels elegidos o los virales |
