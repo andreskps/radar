@@ -13,7 +13,13 @@ export type WorkerRequest =
   | { type: 'scan/enqueue'; username: string; mode?: ScanMode }
   | { type: 'scan/jobs' }
   | { type: 'scan/pause' | 'scan/resume' | 'scan/cancel'; id?: number }
-  | { type: 'db/profile'; username: string };
+  | { type: 'db/profile'; username: string }
+  /** Datos para pintar un perfil (etiquetas y chip). */
+  | { type: 'view/profile'; username: string }
+  /** La pestaña que envía el mensaje muestra este perfil (o ninguno): contador del icono por pestaña. */
+  | { type: 'tab/profile'; username: string | null }
+  /** Posts y métricas de un perfil (verificación M9 y, más adelante, exportación). */
+  | { type: 'db/export'; username: string };
 
 export interface StoredProfile {
   profile: ProfileRow | null;

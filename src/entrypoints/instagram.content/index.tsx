@@ -1,9 +1,12 @@
 import '@/assets/theme.css';
 import ReactDOM from 'react-dom/client';
-import { StatusIndicator } from './StatusIndicator';
+import { ProfileChip } from './ProfileChip';
 import { createClient, fetchProfile, fetchReelsPage, fetchTimelinePage, readProfileContent, type IgClient, type ReadAllOptions } from '@/ig';
 import { isFetchRequest, type FetchRequest, type ProgressMessage, type WorkerRequest } from '@/scan/messages';
 import type { ScanMode } from '@/db/schema';
+import { createStore } from '@/ui/store';
+import { createController, type Controller } from '@/ui/controller';
+import { startBadgeLayer } from '@/ui/badges/layer';
 
 async function toWorker<T>(msg: WorkerRequest): Promise<T> {
   const res = (await browser.runtime.sendMessage(msg)) as { ok: boolean; data?: T; message?: string };
@@ -12,7 +15,7 @@ async function toWorker<T>(msg: WorkerRequest): Promise<T> {
 }
 
 // Acceso desde la consola de DevTools (contexto "Radar").
-function exposeConsoleApi(client: IgClient) {
+function exposeConsoleApi(client: IgClient, controller: Controller) {
   (globalThis as Record<string, unknown>).radar = {
     profile: (username: string) => fetchProfile(client, username),
     read: async (username: string, opts: ReadAllOptions = {}) => {
@@ -32,6 +35,10 @@ function exposeConsoleApi(client: IgClient) {
     resume: (id?: number) => toWorker({ type: 'scan/resume', id }),
     cancel: (id?: number) => toWorker({ type: 'scan/cancel', id }),
     stored: (username: string) => toWorker({ type: 'db/profile', username }),
+    export: (username: string) => toWorker({ type: 'db/export', username }),
+    /** Tiempos de la vista actual (meta M3) y etiquetas pintadas. */
+    ui: () => ({ ...controller.timing, badgesInDom: document.querySelectorAll('radar-badge').length }),
+    setBadges: (visible: boolean) => controller.setBadgesVisible(visible),
   };
 }
 
@@ -41,7 +48,7 @@ function exposeConsoleApi(client: IgClient) {
  * VITE_RADAR_DEV_BRIDGE=1; el build normal no lo incluye.
  */
 function exposeDevBridge() {
-  const allowed = new Set(['scan', 'jobs', 'stored', 'pause', 'resume', 'cancel']);
+  const allowed = new Set(['scan', 'jobs', 'stored', 'pause', 'resume', 'cancel', 'export', 'ui', 'setBadges']);
   window.addEventListener('message', async (e) => {
     if (e.source !== window || e.data?.source !== 'radar-dev' || !allowed.has(e.data.cmd)) return;
     const { id, cmd, args = [] } = e.data as { id: string; cmd: string; args?: unknown[] };
@@ -56,10 +63,11 @@ function exposeDevBridge() {
 }
 
 /** Ejecuta las peticiones que pide la cola del service worker. */
-function serveFetches(client: IgClient) {
+function serveFetches(client: IgClient, controller: Controller) {
   browser.runtime.onMessage.addListener((msg: unknown, _sender, sendResponse) => {
     if ((msg as ProgressMessage)?.type === 'scan/progress') {
       const { job } = msg as ProgressMessage;
+      controller.onProgress(msg as ProgressMessage);
       console.info(`[Radar] @${job.username}: ${job.status} · ${job.phase} · ${job.read} posts · ${job.reelsRead} reels`, job.message ?? '');
       return;
     }
@@ -87,8 +95,10 @@ export default defineContentScript({
 
   async main(ctx) {
     const client = createClient();
-    exposeConsoleApi(client);
-    serveFetches(client);
+    const store = createStore();
+    const controller = createController(store);
+    exposeConsoleApi(client, controller);
+    serveFetches(client, controller);
     if ((import.meta.env as Record<string, string | undefined>).VITE_RADAR_DEV_BRIDGE === '1') exposeDevBridge();
     const ui = await createShadowRootUi(ctx, {
       name: 'radar-ui',
@@ -98,7 +108,7 @@ export default defineContentScript({
         const app = document.createElement('div');
         container.append(app);
         const root = ReactDOM.createRoot(app);
-        root.render(<StatusIndicator />);
+        root.render(<ProfileChip store={store} controller={controller} />);
         return root;
       },
       onRemove(root) {
@@ -106,5 +116,7 @@ export default defineContentScript({
       },
     });
     ui.mount();
+    controller.start();
+    startBadgeLayer(store, (n) => controller.onPainted(n));
   },
 });
