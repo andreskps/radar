@@ -3,7 +3,7 @@
 Extensión de Chrome propia para analizar el contenido público de perfiles de Instagram de la competencia: qué posts y Reels fueron virales, cuáles no, y exportar todo.
 
 ## Estado
-Pasos 01–05 hechos. Sigue el 06 (Ejecución), Fase 0. Trabajo por fases: una fase por commit, registro en `docs/fases/fase-N.md` (ver `docs/roadmap.md`).
+Pasos 01–05 hechos. Paso 06 (Ejecución): Fase 0 hecha (falta que el usuario confirme la carga en Chrome); sigue la Fase 1. Trabajo por fases: una fase por commit, registro en `docs/fases/fase-N.md` (ver `docs/roadmap.md`).
 Nombre provisional del producto: **Radar**.
 
 ## Stack
@@ -23,4 +23,10 @@ WXT (Manifest V3) · TypeScript · React + Tailwind · Dexie (IndexedDB) · Exce
 - Sin backend ni licencias: todo corre en el navegador del usuario.
 
 ## Comandos
-Se crean en la Fase 0: `npm run dev`, `npm run build`, `npm run typecheck`, `npm test`.
+- `npm run dev`: navegador de pruebas con recarga en caliente
+- `npm run build`: genera `dist/chrome-mv3`, que se carga con "Cargar descomprimida"
+- `npm run typecheck`: `wxt prepare` y luego `tsc --noEmit`
+- `npm test`: Vitest, con pruebas en `tests/**/*.test.ts`
+
+Entrypoints en `src/entrypoints/`: `background.ts`, `instagram.content/` (UI en Shadow Root), `center/`.
+Chrome 158 ignora `--load-extension`. Para pruebas automatizadas se usa Edge con un perfil temporal; Chrome se prueba a mano.

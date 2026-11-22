@@ -1,0 +1,10 @@
+@import 'tailwindcss';
+
+/* Identidad visual: docs/design.md §5 */
+@theme {
+  --color-radar-bg: #12141a;
+  --color-radar-surface: #1b1e27;
+  --color-radar-text: #e8eaf0;
+  --color-radar-accent: #c6f432;
+  --font-sans: Inter, ui-sans-serif, system-ui, sans-serif;
+}
