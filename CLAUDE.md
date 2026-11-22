@@ -3,7 +3,7 @@
 Extensión de Chrome propia para analizar el contenido público de perfiles de Instagram de la competencia: qué posts y Reels fueron virales, cuáles no, y exportar todo.
 
 ## Estado
-Pasos 01–05 hechos. Paso 06 (Ejecución): Fases 0, 1 y 2 hechas (falta que el usuario confirme la carga en Chrome). Fase 3 (base local y escaneo) implementada; falta la prueba en vivo en Chrome y decidir M1 frente al ritmo de D3 (ver `docs/fases/fase-3.md`). Para pruebas reales se usa la cuenta de Instagram que esté iniciada en el Chrome del usuario (autorizado), con ritmo lento. Trabajo por fases: una fase por commit, registro en `docs/fases/fase-N.md` (ver `docs/roadmap.md`).
+Pasos 01–05 hechos. Paso 06 (Ejecución): Fases 0, 1 y 2 hechas (falta que el usuario confirme la carga en Chrome). Fase 3 (base local y escaneo) implementada; falta la prueba en vivo en Chrome (ver `docs/fases/fase-3.md`). M1 ajustada a ≤ 15 min para mantener el ritmo seguro (D8). Para pruebas reales se usa la cuenta de Instagram que esté iniciada en el Chrome del usuario (autorizado), con ritmo lento. Trabajo por fases: una fase por commit, registro en `docs/fases/fase-N.md` (ver `docs/roadmap.md`).
 Nombre provisional del producto: **Radar**.
 
 ## Stack

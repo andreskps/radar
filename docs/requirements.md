@@ -42,7 +42,9 @@
 ## Criterios de éxito (metas numéricas)
 | # | Meta | Cómo se mide |
 |---|---|---|
-| M1 | Escanear un perfil de **1.000 reels en ≤ 10 min** con el ritmo seguro | Cronómetro sobre un perfil real grande |
+| M1 | Escanear un perfil de **1.000 reels en ≤ 15 min** con el ritmo seguro (las fotos y carruseles suman ~1 min por cada 160) | Cronómetro sobre un perfil real grande |
+
+_M1 se ajustó el 22-11-2026 (antes ≤ 10 min). Instagram entrega páginas de 12 y hay que leer timeline y Reels: con el ritmo de D3 no se llega a 10 min. Se prioriza no arriesgar la cuenta (D8)._
 | M2 | **0 bloqueos** de la cuenta secundaria escaneando **30 perfiles en una sesión** | Prueba controlada de una tarde |
 | M3 | Badges visibles **≤ 2 s** al abrir un perfil ya escaneado | Medición en el navegador |
 | M4 | Fórmula: **100 %** de las pruebas unitarias pasan (niveles, bordes, madurez, pocos datos) | `vitest` |

@@ -32,7 +32,7 @@ Dependencias nuevas, con las versiones fijadas en el roadmap: `dexie@4.4.7`, `fa
 | `npm test` | ✅ 159 de 159 |
 | Cobertura informativa | `src/db` y `src/scan` (step + queue): líneas 100 %, ramas 90,5 % |
 | `npm run typecheck`, `npm run build` | ✅ |
-| **M1: ~1.000 reels en ≤ 10 min** | ⚠️ **No se cumple con el ritmo de D3** (ver abajo) |
+| **M1: ~1.000 reels** | Meta ajustada a ≤ 15 min (D8); estimado ~12,6 min. ⏳ Falta medirla en real |
 | Cerrar y abrir Chrome a mitad del escaneo | ✅ en prueba (cola nueva retoma desde el cursor). ⏳ **Falta la prueba en Chrome real** |
 | Re-escaneo trae solo lo nuevo | ✅ en prueba: 300 posts, una semana después → ≤ 4 páginas de timeline en vez de 26. ⏳ Falta en real |
 | Segundo perfil real (pendiente de la Fase 2) | ⏳ Falta |
@@ -45,7 +45,7 @@ Instagram entrega 12 publicaciones por página, y hay que leer el timeline (fech
 | 1.000 reels, sin fotos | ~169 | ~12,6 min |
 | 1.000 reels + 500 fotos (prueba de rendimiento) | 210 | ~15,7 min |
 
-La base no es el cuello de botella: 1.500 posts se guardan y procesan en ~0,3 s. Para llegar a 10 min habría que bajar la espera a ~1–2 s, lo que contradice D3. **Decisión del usuario:** mantener el ritmo seguro y ajustar M1 a ~15 min, o acortar la espera y asumir más riesgo de 429.
+La base no es el cuello de botella: 1.500 posts se guardan y procesan en ~0,3 s. Para llegar a 10 min habría que bajar la espera a ~1–2 s, lo que contradice D3. **Decisión (D8, 22-11-2026):** se mantiene el ritmo seguro y M1 pasa a ≤ 15 min para 1.000 reels. El usuario delegó la elección y se priorizó no arriesgar la cuenta.
 
 ## Decisiones
 - **El content script no ve la base:** corre en el origen de instagram.com y su IndexedDB es la de Instagram. Todo acceso a datos desde Instagram (badges de la Fase 4, panel de la Fase 5) va por mensajes al service worker.
@@ -63,5 +63,4 @@ La base no es el cuello de botella: 1.500 posts se guardan y procesan en ~0,3 s.
 
 ## Pendientes
 - Prueba en vivo (checklist anterior): M1 real, reanudar tras cerrar Chrome, re-escaneo real y segundo perfil.
-- Decidir M1 frente a D3.
 - Sigue pendiente del usuario: probar la extensión en su Chrome y confirmar el nombre "Radar".

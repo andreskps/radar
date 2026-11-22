@@ -134,7 +134,8 @@ Las métricas se recalculan cuando entra un post nuevo del perfil; el Puntaje Vi
 - **D5** Instalación manual (modo desarrollador o .zip) para el equipo y los clientes; no se publica en la Web Store.
 - **D6** (22-11-2026, Fase 2) La API v1 de Instagram en la web (`web_profile_info`, `feed/user`, `clips/user`) ya no responde (404 o HTML). El lector usa las mismas consultas GraphQL que la web de Instagram (`/graphql/query` con `doc_id`, tokens `lsd` y `fb_dtsg` de la página). El timeline no trae reproducciones y la pestaña Reels no trae fecha: se leen ambas y se unen por código. Las páginas son de 12. Los `doc_id` cambian con el tiempo: están en `src/ig/queries.ts` y cuando fallan el lector lo dice claramente ("Instagram cambió la consulta de…").
 
-- **D7** (22-11-2026, Fase 3) La cola vive en el SW y guarda cada trabajo en `scanJobs` después de cada página. Se reanuda con `chrome.alarms` (fin de pausa y un vigía de 1 min) y al arrancar el SW. Las pausas de Instagram frenan toda la cola; la del usuario, solo ese perfil. Re-escaneo con corte `min(ahora − 30 días, post más reciente guardado)`. Con 12 posts por página y dos lecturas (timeline + Reels), M1 (1.000 reels ≤ 10 min) no se alcanza con el ritmo de D3; queda a decisión del usuario.
+- **D7** (22-11-2026, Fase 3) La cola vive en el SW y guarda cada trabajo en `scanJobs` después de cada página. Se reanuda con `chrome.alarms` (fin de pausa y un vigía de 1 min) y al arrancar el SW. Las pausas de Instagram frenan toda la cola; la del usuario, solo ese perfil. Re-escaneo con corte `min(ahora − 30 días, post más reciente guardado)`. Con 12 posts por página y dos lecturas (timeline + Reels), M1 (1.000 reels ≤ 10 min) no se alcanza con el ritmo de D3.
+- **D8** (22-11-2026) Se mantiene el ritmo seguro de D3 (2–4 s entre páginas) y M1 pasa a ≤ 15 min. Un bloqueo de la cuenta cuesta más que unos minutos extra, y el escaneo corre en segundo plano.
 
 ## 7. Riesgos
 | Riesgo | Mitigación |

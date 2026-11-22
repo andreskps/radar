@@ -47,7 +47,7 @@ Adaptadores (API web → GraphQL → datos de la página), normalización al mod
 
 ### Fase 3 — Base local y escaneo de un perfil
 Esquema Dexie (`architecture.md` §5), programador con ritmo seguro, pausa/reanudación con `chrome.alarms`, re-escaneo incremental con snapshots, recálculo de métricas.
-**Hecho cuando:** un perfil de ~1.000 reels se escanea completo en ≤ 10 min (M1); cerrar y abrir Chrome a mitad del escaneo lo reanuda; un re-escaneo trae solo lo nuevo; pruebas de la base con fake-indexeddb pasan.
+**Hecho cuando:** un perfil de ~1.000 reels se escanea completo en ≤ 15 min (M1, ajustada en D8); cerrar y abrir Chrome a mitad del escaneo lo reanuda; un re-escaneo trae solo lo nuevo; pruebas de la base con fake-indexeddb pasan.
 
 ### Fase 4 — Etiquetas sobre Instagram
 Badges en cada miniatura (también al hacer scroll y al cambiar de perfil sin recargar), chip del perfil, botón "Escanear con Radar", tooltip con detalle; interruptor para ocultarlas.
