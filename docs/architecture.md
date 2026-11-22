@@ -59,7 +59,7 @@ Versiones exactas fijadas en `roadmap.md` (verificadas en npm el 22-11-2026).
 | **Lector de Instagram** (`src/ig/`) | Pedir perfil, Reels y posts paginados; normalizar a nuestro modelo. Vías vigentes (verificadas el 22-11-2026, ver D6): ID desde el HTML del perfil → GraphQL de perfil → GraphQL del timeline (todos los posts con fecha) → GraphQL de la pestaña Reels (reproducciones), unidos por código | Content script (necesita las cookies del sitio) |
 | **Programador de escaneo** (`src/scan/`) | Cola de perfiles, ritmo seguro, pausa/reanudación, detección de 429 y de sesión cerrada | Service worker ordena; el content script de una pestaña de Instagram ejecuta las peticiones |
 | **Motor de métricas** (`src/metrics/`) | Multiplicador móvil, niveles, ER, Puntaje Viral, Joya oculta, mejor hora, hashtags, ganchos | Funciones puras; se usan en panel y Centro |
-| **Almacén** (`src/db/`) | Dexie: esquema, migraciones, consultas | Todos los contextos de la extensión |
+| **Almacén** (`src/db/`) | Dexie: esquema, migraciones, consultas | Service worker y Centro. El content script corre en el origen de Instagram y no la ve: pide los datos por mensajes al SW |
 | **Badges** (`src/ui/badges/`) | Detectar las miniaturas de la cuadrícula (por el código del post en el enlace) y pintar la etiqueta | Content script |
 | **Panel lateral** (`src/ui/panel/`) | Vista de un perfil: Resumen, Contenido, Tiempo, Palabras | Content script, Shadow DOM |
 | **Centro** (`src/ui/center/`) | Vistas entre perfiles: clientes, ranking, comparar, colecciones, cola, ajustes | Página propia de la extensión (pestaña completa) |
@@ -84,8 +84,8 @@ No se pide acceso a otras webs, historial ni pestañas. El modelo de Whisper se 
 | Mensaje | De → a | Contenido |
 |---|---|---|
 | `scan/enqueue` | Panel o Centro → SW | perfiles, rango, tipos |
-| `scan/fetchPage` | SW → content script | perfil, cursor, tipo |
-| `scan/page` | content script → SW | posts normalizados, siguiente cursor |
+| `scan/fetch` | SW → content script | tipo (`profile` \| `timeline` \| `reels`), perfil, cursor; responde con el resultado normalizado y el siguiente cursor |
+| `scan/enqueue`, `scan/jobs`, `scan/pause` / `resume` / `cancel`, `db/profile` | content script, panel o Centro → SW | (implementados en la Fase 3) |
 | `scan/progress` | SW → todos | perfil, posts leídos, estimado, estado |
 | `scan/paused` | SW → todos | motivo (429, sesión cerrada, usuario) y hora de reanudación |
 | `transcribe/request` | Panel o Centro → SW → offscreen | post, idioma |
@@ -133,6 +133,8 @@ Las métricas se recalculan cuando entra un post nuevo del perfil; el Puntaje Vi
 - **D4** Código 100 % propio; Viralytics solo como referencia funcional.
 - **D5** Instalación manual (modo desarrollador o .zip) para el equipo y los clientes; no se publica en la Web Store.
 - **D6** (22-11-2026, Fase 2) La API v1 de Instagram en la web (`web_profile_info`, `feed/user`, `clips/user`) ya no responde (404 o HTML). El lector usa las mismas consultas GraphQL que la web de Instagram (`/graphql/query` con `doc_id`, tokens `lsd` y `fb_dtsg` de la página). El timeline no trae reproducciones y la pestaña Reels no trae fecha: se leen ambas y se unen por código. Las páginas son de 12. Los `doc_id` cambian con el tiempo: están en `src/ig/queries.ts` y cuando fallan el lector lo dice claramente ("Instagram cambió la consulta de…").
+
+- **D7** (22-11-2026, Fase 3) La cola vive en el SW y guarda cada trabajo en `scanJobs` después de cada página. Se reanuda con `chrome.alarms` (fin de pausa y un vigía de 1 min) y al arrancar el SW. Las pausas de Instagram frenan toda la cola; la del usuario, solo ese perfil. Re-escaneo con corte `min(ahora − 30 días, post más reciente guardado)`. Con 12 posts por página y dos lecturas (timeline + Reels), M1 (1.000 reels ≤ 10 min) no se alcanza con el ritmo de D3; queda a decisión del usuario.
 
 ## 7. Riesgos
 | Riesgo | Mitigación |

@@ -3,7 +3,7 @@
 Extensión de Chrome propia para analizar el contenido público de perfiles de Instagram de la competencia: qué posts y Reels fueron virales, cuáles no, y exportar todo.
 
 ## Estado
-Pasos 01–05 hechos. Paso 06 (Ejecución): Fases 0, 1 y 2 hechas (falta que el usuario confirme la carga en Chrome); sigue la Fase 3 (base local y escaneo). Para pruebas reales se usa la cuenta de Instagram que esté iniciada en el Chrome del usuario (autorizado), con ritmo lento. Trabajo por fases: una fase por commit, registro en `docs/fases/fase-N.md` (ver `docs/roadmap.md`).
+Pasos 01–05 hechos. Paso 06 (Ejecución): Fases 0, 1 y 2 hechas (falta que el usuario confirme la carga en Chrome). Fase 3 (base local y escaneo) implementada; falta la prueba en vivo en Chrome y decidir M1 frente al ritmo de D3 (ver `docs/fases/fase-3.md`). Para pruebas reales se usa la cuenta de Instagram que esté iniciada en el Chrome del usuario (autorizado), con ritmo lento. Trabajo por fases: una fase por commit, registro en `docs/fases/fase-N.md` (ver `docs/roadmap.md`).
 Nombre provisional del producto: **Radar**.
 
 ## Stack
@@ -28,8 +28,10 @@ WXT (Manifest V3) · TypeScript · React + Tailwind · Dexie (IndexedDB) · Exce
 - `npm run typecheck`: `wxt prepare` y luego `tsc --noEmit`
 - `npm test`: Vitest, con pruebas en `tests/**/*.test.ts`
 - `npm run test:coverage`: cobertura de `src/metrics`, con un mínimo del 95 %
+- Pruebas de la base: `tests/db/` y `tests/scan/` con fake-indexeddb
 
 El lector de Instagram está en `src/ig/`. Usa GraphQL de la web de Instagram, porque la API v1 ya no funciona (ver D6 en `docs/architecture.md`). Los `doc_id` están en `src/ig/queries.ts`. Desde la consola de DevTools en instagram.com, con el contexto "Radar", se puede llamar a `radar.read('usuario')`.
+La base local está en `src/db/` (Dexie, esquema y operaciones). La cola de escaneo está en `src/scan/`: el service worker la ejecuta y pide cada página al content script. El content script no ve la base (corre en el origen de Instagram) y usa mensajes. En consola: `radar.scan('usuario')`, `radar.jobs()`, `radar.stored('usuario')`.
 El motor de métricas está en `src/metrics/`: funciones puras y `analyzeProfile` como entrada principal. Las decisiones que precisan la fórmula están en `docs/fases/fase-1.md`.
 
 Entrypoints en `src/entrypoints/`: `background.ts`, `instagram.content/` (UI en Shadow Root), `center/`.
