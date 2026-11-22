@@ -8,3 +8,4 @@ dist/
 .wxt/
 .output/
 stats.html
+coverage/

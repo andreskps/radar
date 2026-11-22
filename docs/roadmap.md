@@ -7,7 +7,7 @@
 | 03 Definición | Hecho (22-11-2026) — 18 RF, 5 RNF, 9 metas |
 | 04 Diseño | Hecho (22-11-2026) |
 | 05 Planificación | Hecho (22-11-2026) |
-| 06 Ejecución | En curso — Fase 0 hecha (22-11-2026), ver `docs/fases/fase-0.md` |
+| 06 Ejecución | En curso — Fases 0 y 1 hechas (22-11-2026), ver `docs/fases/` |
 
 ## Versiones fijadas (verificadas en npm el 22-11-2026)
 | Paquete | Versión | Nota |
