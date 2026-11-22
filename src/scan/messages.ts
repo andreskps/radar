@@ -16,6 +16,8 @@ export type WorkerRequest =
   | { type: 'db/profile'; username: string }
   /** Datos para pintar un perfil (etiquetas y chip). */
   | { type: 'view/profile'; username: string }
+  /** Todos los posts de un perfil con su métrica, para el panel lateral. */
+  | { type: 'view/panel'; username: string }
   /** La pestaña que envía el mensaje muestra este perfil (o ninguno): contador del icono por pestaña. */
   | { type: 'tab/profile'; username: string | null }
   /** Posts y métricas de un perfil (verificación M9 y, más adelante, exportación). */

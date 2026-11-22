@@ -1,6 +1,6 @@
 // Service worker: cola de escaneo, alarmas de reanudación, contador del icono por pestaña
 // y acceso a la base para el content script (que no la ve: corre en el origen de Instagram).
-import { openDb, getProfileByUsername, profilePosts, loadProfileView, jobFor } from '@/db';
+import { openDb, getProfileByUsername, profilePosts, loadProfileView, loadPanelData, jobFor } from '@/db';
 import { ScanQueue, type ProgressMessage, type StoredProfile, type WorkerRequest } from '@/scan';
 import { createTabFetcher } from '@/scan/tabFetcher';
 import { actionBadgeText } from '@/ui/format';
@@ -125,6 +125,8 @@ export default defineBackground(() => {
         return exportProfile(msg.username);
       case 'view/profile':
         return loadProfileView(db, msg.username);
+      case 'view/panel':
+        return loadPanelData(db, msg.username);
       case 'tab/profile':
         if (tabId !== undefined) await setTabProfile(tabId, msg.username);
         return;

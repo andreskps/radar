@@ -52,32 +52,34 @@ export interface ProfileView {
 
 const RECENT_REELS = 30;
 
+/** Cifras de un post más su métrica (si la tiene). */
+export function toBadgePost(p: PostRow, m?: MetricRow): BadgePost {
+  return {
+    code: p.code,
+      type: p.type,
+    takenAt: p.takenAt,
+    views: p.views,
+    likes: p.likes,
+    comments: p.comments,
+    likesHidden: p.likesHidden,
+    collab: p.collab,
+    group: m?.group ?? null,
+    multiplier: m?.multiplier ?? null,
+    baseline: m?.baseline ?? null,
+    sampleSize: m?.sampleSize ?? 0,
+    tier: m?.tier ?? null,
+    maturity: m?.maturity ?? null,
+    confidence: m?.confidence ?? null,
+    er: m?.er ?? null,
+    hiddenGem: m?.hiddenGem ?? false,
+  };
+}
+
 export function buildProfileView(username: string, profile: ProfileRow | null, posts: PostRow[], metrics: MetricRow[], job: ScanJobRow | null): ProfileView {
   if (!profile) return { username, summary: null, job, posts: {} };
   const byPost = new Map(metrics.map((m) => [m.postId, m]));
   const out: Record<string, BadgePost> = {};
-  for (const p of posts) {
-    const m = byPost.get(p.id);
-    out[p.code] = {
-      code: p.code,
-      type: p.type,
-      takenAt: p.takenAt,
-      views: p.views,
-      likes: p.likes,
-      comments: p.comments,
-      likesHidden: p.likesHidden,
-      collab: p.collab,
-      group: m?.group ?? null,
-      multiplier: m?.multiplier ?? null,
-      baseline: m?.baseline ?? null,
-      sampleSize: m?.sampleSize ?? 0,
-      tier: m?.tier ?? null,
-      maturity: m?.maturity ?? null,
-      confidence: m?.confidence ?? null,
-      er: m?.er ?? null,
-      hiddenGem: m?.hiddenGem ?? false,
-    };
-  }
+  for (const p of posts) out[p.code] = toBadgePost(p, byPost.get(p.id));
   const recentViews = posts
     .filter((p) => p.type === 'reel' && p.views !== null)
     .sort((a, b) => b.takenAt - a.takenAt)
@@ -119,4 +121,44 @@ export async function loadProfileView(db: RadarDB, username: string): Promise<Pr
   if (!profile) return buildProfileView(clean(username), null, [], [], job);
   const [posts, metrics] = await Promise.all([profilePosts(db, profile.id), db.metrics.where('profileId').equals(profile.id).toArray()]);
   return buildProfileView(profile.username, profile, posts, metrics, job);
+}
+
+/** Post completo para el panel lateral: cifras, texto y métrica. */
+export interface PanelPost extends BadgePost {
+  id: string;
+  caption: string | null;
+  hashtags: string[];
+  durationSec: number | null;
+  coverUrl: string | null;
+  reach: number | null;
+  viralScore: number | null;
+}
+
+export interface PanelData {
+  profile: ProfileRow | null;
+  posts: PanelPost[];
+}
+
+export function buildPanelPosts(posts: PostRow[], metrics: MetricRow[]): PanelPost[] {
+  const byPost = new Map(metrics.map((m) => [m.postId, m]));
+  return posts.map((p) => {
+    const m = byPost.get(p.id);
+    return {
+      ...toBadgePost(p, m),
+      id: p.id,
+      caption: p.caption,
+      hashtags: p.hashtags,
+      durationSec: p.durationSec,
+      coverUrl: p.coverUrl,
+      reach: m?.reach ?? null,
+      viralScore: m?.viralScore ?? null,
+    };
+  });
+}
+
+export async function loadPanelData(db: RadarDB, username: string): Promise<PanelData> {
+  const profile = (await getProfileByUsername(db, username)) ?? null;
+  if (!profile) return { profile, posts: [] };
+  const [posts, metrics] = await Promise.all([profilePosts(db, profile.id), db.metrics.where('profileId').equals(profile.id).toArray()]);
+  return { profile, posts: buildPanelPosts(posts, metrics) };
 }

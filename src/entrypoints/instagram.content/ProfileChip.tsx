@@ -76,6 +76,11 @@ export function ProfileChip({ store, controller }: { store: Store; controller: C
           </Button>
         ) : null}
         {summary && (
+          <Button primary onClick={() => controller.setPanelOpen(!state.panelOpen)}>
+            {state.panelOpen ? 'Cerrar panel' : 'Abrir panel'}
+          </Button>
+        )}
+        {summary && (
           <label className="ml-auto flex cursor-pointer items-center gap-[6px] text-[11px] text-radar-text/80">
             <input
               type="checkbox"

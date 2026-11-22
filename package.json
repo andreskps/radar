@@ -11,9 +11,11 @@
     "typecheck": "wxt prepare && tsc --noEmit",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "postinstall": "wxt prepare"
+    "postinstall": "wxt prepare",
+    "preview:panel": "vite --config tests/visual/vite.config.ts"
   },
   "dependencies": {
+    "chart.js": "4.6.1",
     "dexie": "4.4.7",
     "react": "19.3.1",
     "react-dom": "19.3.1"

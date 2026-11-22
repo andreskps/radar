@@ -8,6 +8,7 @@ import { profileFromPath } from './route';
 import type { Store } from './store';
 
 const VISIBLE_KEY = 'radar:badgesVisible';
+const THEME_KEY = 'radar:theme';
 const ROUTE_POLL_MS = 300;
 
 export async function toWorker<T>(msg: WorkerRequest): Promise<T> {
@@ -23,12 +24,24 @@ export interface Timing {
   /** Desde que se detectó el perfil hasta la primera etiqueta pintada (meta M3: ≤ 2 s). */
   paintMs: number | null;
   painted: number;
+  /** Desde el clic en "Abrir panel" hasta el primer frame con datos (meta: < 1 s). */
+  panelMs: number | null;
+  panelPosts: number | null;
+}
+
+/** Tema por defecto: el de Instagram (fondo oscuro → oscuro). */
+function instagramTheme(): 'dark' | 'light' {
+  const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(getComputedStyle(document.body).backgroundColor);
+  if (!m) return 'dark';
+  const [r, g, b] = m.slice(1).map(Number) as [number, number, number];
+  return 0.299 * r + 0.587 * g + 0.114 * b < 128 ? 'dark' : 'light';
 }
 
 export function createController(store: Store) {
   let routeStart = 0;
   let requestSeq = 0;
-  const timing: Timing = { username: null, loadMs: null, paintMs: null, painted: 0 };
+  const timing: Timing = { username: null, loadMs: null, paintMs: null, painted: 0, panelMs: null, panelPosts: null };
+  let panelClickAt: number | null = null;
 
   async function loadView(username: string) {
     const seq = ++requestSeq;
@@ -50,7 +63,7 @@ export function createController(store: Store) {
     if (username === store.get().username) return;
     routeStart = performance.now();
     Object.assign(timing, { username, loadMs: null, paintMs: null, painted: 0 });
-    store.set({ username, view: null, loadMs: null });
+    store.set({ username, view: null, loadMs: null, ...(username ? {} : { panelOpen: false }) });
     void toWorker({ type: 'tab/profile', username }).catch(() => {});
     if (username) void loadView(username);
   }
@@ -65,8 +78,10 @@ export function createController(store: Store) {
   return {
     timing,
     start() {
-      void browser.storage.local.get(VISIBLE_KEY).then((r) => {
+      store.set({ theme: instagramTheme() });
+      void browser.storage.local.get([VISIBLE_KEY, THEME_KEY]).then((r) => {
         if (typeof r[VISIBLE_KEY] === 'boolean') store.set({ badgesVisible: r[VISIBLE_KEY] as boolean });
+        if (r[THEME_KEY] === 'dark' || r[THEME_KEY] === 'light') store.set({ theme: r[THEME_KEY] });
       });
       onRoute(location.pathname);
       setInterval(() => onRoute(location.pathname), ROUTE_POLL_MS);
@@ -92,6 +107,23 @@ export function createController(store: Store) {
     async resume() {
       const job = store.get().view?.job;
       await toWorker({ type: 'scan/resume', id: job?.id });
+    },
+    setPanelOpen(open: boolean) {
+      if (open) {
+        panelClickAt = performance.now();
+        timing.panelMs = null;
+      }
+      store.set({ panelOpen: open });
+    },
+    onPanelRendered(posts: number) {
+      if (panelClickAt === null) return;
+      timing.panelMs = Math.round(performance.now() - panelClickAt);
+      timing.panelPosts = posts;
+      panelClickAt = null;
+    },
+    async setTheme(theme: 'dark' | 'light') {
+      store.set({ theme });
+      await browser.storage.local.set({ [THEME_KEY]: theme });
     },
     async setBadgesVisible(visible: boolean) {
       store.set({ badgesVisible: visible });

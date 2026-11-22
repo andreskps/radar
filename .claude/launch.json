@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "panel-preview",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["vite", "--config", "tests/visual/vite.config.ts"],
+      "port": 5199
+    }
+  ]
+}

@@ -1,6 +1,9 @@
 import '@/assets/theme.css';
 import ReactDOM from 'react-dom/client';
 import { ProfileChip } from './ProfileChip';
+import { Panel } from '@/ui/panel/Panel';
+import { useSyncExternalStore } from 'react';
+import type { Store } from '@/ui/store';
 import { createClient, fetchProfile, fetchReelsPage, fetchTimelinePage, readProfileContent, type IgClient, type ReadAllOptions } from '@/ig';
 import { isFetchRequest, type FetchRequest, type ProgressMessage, type WorkerRequest } from '@/scan/messages';
 import type { ScanMode } from '@/db/schema';
@@ -39,6 +42,7 @@ function exposeConsoleApi(client: IgClient, controller: Controller) {
     /** Tiempos de la vista actual (meta M3) y etiquetas pintadas. */
     ui: () => ({ ...controller.timing, badgesInDom: document.querySelectorAll('radar-badge').length }),
     setBadges: (visible: boolean) => controller.setBadgesVisible(visible),
+    openPanel: (open = true) => controller.setPanelOpen(open),
   };
 }
 
@@ -48,7 +52,7 @@ function exposeConsoleApi(client: IgClient, controller: Controller) {
  * VITE_RADAR_DEV_BRIDGE=1; el build normal no lo incluye.
  */
 function exposeDevBridge() {
-  const allowed = new Set(['scan', 'jobs', 'stored', 'pause', 'resume', 'cancel', 'export', 'ui', 'setBadges']);
+  const allowed = new Set(['scan', 'jobs', 'stored', 'pause', 'resume', 'cancel', 'export', 'ui', 'setBadges', 'openPanel']);
   window.addEventListener('message', async (e) => {
     if (e.source !== window || e.data?.source !== 'radar-dev' || !allowed.has(e.data.cmd)) return;
     const { id, cmd, args = [] } = e.data as { id: string; cmd: string; args?: unknown[] };
@@ -88,6 +92,16 @@ function serveFetches(client: IgClient, controller: Controller) {
   });
 }
 
+function RadarUi({ store, controller }: { store: Store; controller: Controller }) {
+  const { panelOpen, username } = useSyncExternalStore(store.subscribe, store.get);
+  return (
+    <>
+      {panelOpen && username && <Panel store={store} controller={controller} />}
+      {!(panelOpen && username) && <ProfileChip store={store} controller={controller} />}
+    </>
+  );
+}
+
 // Content script en Instagram. La UI vive en un Shadow Root para no alterar los estilos del sitio (RNF-04).
 export default defineContentScript({
   matches: ['*://*.instagram.com/*'],
@@ -108,7 +122,7 @@ export default defineContentScript({
         const app = document.createElement('div');
         container.append(app);
         const root = ReactDOM.createRoot(app);
-        root.render(<ProfileChip store={store} controller={controller} />);
+        root.render(<RadarUi store={store} controller={controller} />);
         return root;
       },
       onRemove(root) {
