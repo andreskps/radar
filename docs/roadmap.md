@@ -7,7 +7,7 @@
 | 03 Definición | Hecho (22-11-2026) — 18 RF, 5 RNF, 9 metas |
 | 04 Diseño | Hecho (22-11-2026) |
 | 05 Planificación | Hecho (22-11-2026) |
-| 06 Ejecución | En curso — Fases 0–2 hechas; Fase 3 hecha; Fase 4 implementada con validación en vivo pendiente; Fase 5 implementada con validación en vivo pendiente (22-11-2026), ver `docs/fases/` |
+| 06 Ejecución | En curso — Fases 0–2 hechas; Fase 3 hecha; Fase 4 implementada con validación en vivo pendiente; Fase 5 implementada con validación en vivo pendiente; Fase 6 (exportación) hecha, con Google Sheets, importación en otro Chrome y prueba en Instagram pendientes (22-11-2026), ver `docs/fases/` |
 
 ## Versiones fijadas (verificadas en npm el 22-11-2026)
 | Paquete | Versión | Nota |

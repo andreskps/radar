@@ -3,11 +3,11 @@
 Extensión de Chrome propia para analizar el contenido público de perfiles de Instagram de la competencia: qué posts y Reels fueron virales, cuáles no, y exportar todo.
 
 ## Estado
-Pasos 01–05 hechos. Paso 06 (Ejecución): Fases 0, 1 y 2 hechas (falta que el usuario confirme la carga en Chrome). Fase 3 hecha y probada en vivo. Fase 4 (etiquetas y contador por perfil) implementada; falta validarla en vivo (M3, M9, estilos), porque el usuario debe pulsar ↻ una vez en chrome://extensions. Fase 5 (panel lateral) implementada; su validación en vivo depende de la misma recarga. Sigue la Fase 6 (exportación). M1 ajustada a ≤ 15 min para mantener el ritmo seguro (D8). Para pruebas automatizadas en Chrome: `VITE_RADAR_DEV_BRIDGE=1 npm run build` agrega un puente `postMessage` hacia `radar.*` y recarga automática al detectar un build nuevo (ver `docs/fases/fase-3.md` y `fase-4.md`). La UI sobre Instagram está en `src/ui/`. Para pruebas reales se usa la cuenta de Instagram que esté iniciada en el Chrome del usuario (autorizado), con ritmo lento. Trabajo por fases: una fase por commit, registro en `docs/fases/fase-N.md` (ver `docs/roadmap.md`).
+Pasos 01–05 hechos. Paso 06 (Ejecución): Fases 0, 1 y 2 hechas (falta que el usuario confirme la carga en Chrome). Fase 3 hecha y probada en vivo. Fase 4 (etiquetas y contador por perfil) implementada; falta validarla en vivo (M3, M9, estilos), porque el usuario debe pulsar ↻ una vez en chrome://extensions. Fase 5 (panel lateral) implementada; su validación en vivo depende de la misma recarga. Fase 6 (exportación) hecha: Excel/CSV desde el panel y desde Centro › Datos, copia de la base en JSON (`src/export/`); faltan Google Sheets, importar en otro Chrome y la prueba en Instagram. Sigue la Fase 7 (Centro). M1 ajustada a ≤ 15 min para mantener el ritmo seguro (D8). Para pruebas automatizadas en Chrome: `VITE_RADAR_DEV_BRIDGE=1 npm run build` agrega un puente `postMessage` hacia `radar.*` y recarga automática al detectar un build nuevo (ver `docs/fases/fase-3.md` y `fase-4.md`). La UI sobre Instagram está en `src/ui/`. Para pruebas reales se usa la cuenta de Instagram que esté iniciada en el Chrome del usuario (autorizado), con ritmo lento. Trabajo por fases: una fase por commit, registro en `docs/fases/fase-N.md` (ver `docs/roadmap.md`).
 Nombre provisional del producto: **Radar**.
 
 ## Stack
-WXT (Manifest V3) · TypeScript · React + Tailwind · Dexie (IndexedDB) · ExcelJS · Chart.js · transformers.js/Whisper en offscreen · Vitest. Sin backend.
+WXT (Manifest V3) · TypeScript · React + Tailwind · Dexie (IndexedDB) · .xlsx propio (D9) · Chart.js · transformers.js/Whisper en offscreen · Vitest. Sin backend.
 
 ## Mapa del repo
 - `docs/project.md` — problema, usuarios, objetivo, alcance
@@ -29,7 +29,8 @@ WXT (Manifest V3) · TypeScript · React + Tailwind · Dexie (IndexedDB) · Exce
 - `npm test`: Vitest, con pruebas en `tests/**/*.test.ts`
 - `npm run test:coverage`: cobertura de `src/metrics`, con un mínimo del 95 %
 - Pruebas de la base: `tests/db/` y `tests/scan/` con fake-indexeddb
-- `npm run preview:panel`: vista previa del panel con datos simulados en http://localhost:5199 (`?theme=light` para el modo claro)
+- `npm run preview:panel`: vista previa del panel con datos simulados en http://localhost:5199 (`?theme=light` para el modo claro); el Centro en `/center.html` (`?reset` resiembra, `?empty` vacía)
+- `RADAR_EXPORT_OUT=carpeta npx vitest run tests/export`: deja `radar-10000.xlsx`, `radar-10000.csv` y `radar-60.xlsx` para abrirlos en Excel
 
 El lector de Instagram está en `src/ig/`. Usa GraphQL de la web de Instagram, porque la API v1 ya no funciona (ver D6 en `docs/architecture.md`). Los `doc_id` están en `src/ig/queries.ts`. Desde la consola de DevTools en instagram.com, con el contexto "Radar", se puede llamar a `radar.read('usuario')`.
 La base local está en `src/db/` (Dexie, esquema y operaciones). La cola de escaneo está en `src/scan/`: el service worker la ejecuta y pide cada página al content script. El content script no ve la base (corre en el origen de Instagram) y usa mensajes. En consola: `radar.scan('usuario')`, `radar.jobs()`, `radar.stored('usuario')`.

@@ -11,6 +11,7 @@ import { SummaryTab } from './SummaryTab';
 import { ContentTab } from './ContentTab';
 import { TimeTab } from './TimeTab';
 import { WordsTab } from './WordsTab';
+import { ExportButtons } from './ExportButtons';
 
 type Tab = 'summary' | 'content' | 'time' | 'words';
 const TABS: { value: Tab; label: string }[] = [
@@ -113,6 +114,7 @@ export function Panel({ store, controller }: { store: Store; controller: Control
             </button>
           )}
         </div>
+        {data?.profile && <ExportButtons data={data} />}
         <nav className="flex gap-[4px]">
           {TABS.map((t) => (
             <button

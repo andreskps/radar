@@ -134,3 +134,8 @@ export function agoText(at: number | null, now = Date.now()): string {
   if (h < 48) return `hace ${h} h`;
   return `hace ${Math.round(h / 24)} días`;
 }
+
+/** "850 ms", "1,4 s". */
+export function durationText(ms: number): string {
+  return ms < 1000 ? `${Math.round(ms)} ms` : `${(ms / 1000).toLocaleString('es-CO', { maximumFractionDigits: 1 })} s`;
+}

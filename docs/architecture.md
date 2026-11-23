@@ -21,7 +21,7 @@ IA solo donde aporta: **transcripción local con Whisper** (gratis, en tu equipo
 | UI | React + Tailwind | Panel complejo (grillas, filtros, gráficas) |
 | Gráficas | Chart.js (o Recharts) | Línea en el tiempo, histograma, mapa de calor |
 | Base de datos local | **IndexedDB vía Dexie** + permiso `unlimitedStorage` | Miles de posts por perfil; `chrome.storage` se queda corto |
-| Excel | ExcelJS | Varias hojas, formato, enlaces |
+| Excel | Escritor .xlsx propio (`src/export/xlsx.ts`, D9) | Varias hojas, formato, enlaces; sin dependencia |
 | Transcripción | transformers.js + Whisper en documento offscreen (WebGPU / WASM) | Gratis y privado |
 | Pruebas | Vitest (fórmula y parsers) + prueba manual guiada en Instagram | La fórmula se prueba con datos fijos |
 
@@ -64,7 +64,7 @@ Versiones exactas fijadas en `roadmap.md` (verificadas en npm el 22-11-2026).
 | **Panel lateral** (`src/ui/panel/`) | Vista de un perfil: Resumen, Contenido, Tiempo, Palabras | Content script, Shadow DOM |
 | **Centro** (`src/ui/center/`) | Vistas entre perfiles: clientes, ranking, comparar, colecciones, cola, ajustes | Página propia de la extensión (pestaña completa) |
 | **Transcriptor** (`src/transcribe/`) | Bajar audio del reel, convertir a PCM 16 kHz, Whisper, extraer gancho | Offscreen |
-| **Exportador** (`src/export/`) | Excel multi-hoja y CSV, base completa en JSON | Centro y panel |
+| **Exportador** (`src/export/`) | Excel multi-hoja (.xlsx propio) y CSV, base completa en JSON (fusión por clave, sin la cola) | Centro (sección Datos) y panel; descarga con URL de Blob, sin permiso `downloads` |
 
 **Por qué un "Centro" aparte:** el ranking de decenas de perfiles y las colecciones de clientes no caben en un panel sobre Instagram. Viralytics lo mete todo en el panel lateral; nosotros dejamos el panel para el perfil abierto y el Centro para el trabajo entre perfiles.
 
@@ -136,6 +136,8 @@ Las métricas se recalculan cuando entra un post nuevo del perfil; el Puntaje Vi
 
 - **D7** (22-11-2026, Fase 3) La cola vive en el SW y guarda cada trabajo en `scanJobs` después de cada página. Se reanuda con `chrome.alarms` (fin de pausa y un vigía de 1 min) y al arrancar el SW. Las pausas de Instagram frenan toda la cola; la del usuario, solo ese perfil. Re-escaneo con corte `min(ahora − 30 días, post más reciente guardado)`. Con 12 posts por página y dos lecturas (timeline + Reels), M1 (1.000 reels ≤ 10 min) no se alcanza con el ritmo de D3.
 - **D8** (22-11-2026) Se mantiene el ritmo seguro de D3 (2–4 s entre páginas) y M1 pasa a ≤ 15 min. Un bloqueo de la cuenta cuesta más que unos minutos extra, y el escaneo corre en segundo plano.
+- **D9** (22-11-2026, Fase 6) El .xlsx se escribe con código propio (ZIP + SpreadsheetML) en vez de ExcelJS: los botones del panel viven en el content script, que carga en cada página de Instagram, y ExcelJS pesa cerca de 1 MB con polyfills de Node. Basta con varias hojas, formatos, enlaces (`HYPERLINK`) y filtros. Validado abriendo el archivo en Excel. Se reevalúa si hacen falta gráficas o estilos complejos dentro del Excel.
+- **D10** (22-11-2026, Fase 6) El CSV es estándar (coma, punto decimal, UTF-8 con BOM) para Google Sheets y otras herramientas. Excel en es-CO espera `;` y coma decimal al abrir con doble clic, así que para Excel se usa el .xlsx. La variante regional existe en `toCsv` para exponerla en Ajustes (Fase 9).
 
 ## 7. Riesgos
 | Riesgo | Mitigación |
