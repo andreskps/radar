@@ -3,6 +3,7 @@
 import { openDb, getProfileByUsername, profilePosts, loadProfileView, loadPanelData, jobFor } from '@/db';
 import { ScanQueue, type ProgressMessage, type StoredProfile, type WorkerRequest } from '@/scan';
 import { createTabFetcher } from '@/scan/tabFetcher';
+import { countByIndex } from '@/db/lookup';
 import { actionBadgeText } from '@/ui/format';
 import type { ScanJobRow } from '@/db';
 
@@ -95,7 +96,7 @@ export default defineBackground(() => {
       posts: posts.length,
       reelsWithViews: posts.filter((p) => p.type === 'reel' && p.views !== null).length,
       metrics: await db.metrics.where('profileId').equals(profile.id).count(),
-      snapshots: await db.snapshots.where('postId').anyOf(posts.map((p) => p.id)).count(),
+      snapshots: await countByIndex(db.snapshots, 'postId', posts.map((p) => p.id)),
     };
   }
 

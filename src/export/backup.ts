@@ -14,6 +14,7 @@ import type {
   SnapshotRow,
   TranscriptRow,
 } from '../db/schema';
+import { rowsByIndex } from '../db/lookup';
 
 export const BACKUP_FORMAT = 'radar-backup';
 export const BACKUP_VERSION = 1;
@@ -92,7 +93,7 @@ export async function importBackup(db: RadarDB, backup: Backup): Promise<BackupC
     await db.profiles.bulkPut(t.profiles);
     // Lo mismo con el código del post (único): una fila vieja con otro id y el mismo código se reemplaza.
     const idByCode = new Map(t.posts.map((p) => [p.code, p.id]));
-    const stale = (await db.posts.where('code').anyOf([...idByCode.keys()]).toArray()).filter((old) => idByCode.get(old.code) !== old.id);
+    const stale = (await rowsByIndex(db.posts, 'code', [...idByCode.keys()])).filter((old) => idByCode.get(old.code) !== old.id);
     if (stale.length) await db.posts.bulkDelete(stale.map((p) => p.id));
     await db.posts.bulkPut(t.posts);
     await db.metrics.bulkPut(t.metrics);
@@ -100,7 +101,7 @@ export async function importBackup(db: RadarDB, backup: Backup): Promise<BackupC
 
     // Snapshots: el id es local; se agregan los que no estén (mismo post y mismo momento).
     const pairs = t.snapshots.map((s) => [s.postId, s.at] as [string, number]);
-    const existing = new Set((await db.snapshots.where('[postId+at]').anyOf(pairs).toArray()).map((s) => `${s.postId}|${s.at}`));
+    const existing = new Set((await rowsByIndex(db.snapshots, '[postId+at]', pairs)).map((s) => `${s.postId}|${s.at}`));
     const fresh = t.snapshots.filter((s) => !existing.has(`${s.postId}|${s.at}`)).map(({ id: _id, ...s }) => s);
     await db.snapshots.bulkAdd(fresh);
 

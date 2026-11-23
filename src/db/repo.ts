@@ -2,6 +2,7 @@
 import Dexie from 'dexie';
 import type { IgPost, IgProfile, IgReelStats } from '../ig/types';
 import { analyzeProfile, viralScores } from '../metrics';
+import { deleteByIndex, rowsByIndex } from './lookup';
 import type { MetricRow, PostRow, ProfileRow, RadarDB, SnapshotRow } from './schema';
 
 /** Guarda el perfil sin perder los datos de escaneo que ya tenía. */
@@ -62,7 +63,7 @@ export interface ReelStatsResult {
 /** Aplica las reproducciones de la pestaña Reels a los posts ya guardados (unidos por código). */
 export async function applyReelStats(db: RadarDB, stats: readonly IgReelStats[], now: number): Promise<ReelStatsResult> {
   return db.transaction('rw', db.posts, async () => {
-    const found = await db.posts.where('code').anyOf(stats.map((s) => s.code)).toArray();
+    const found = await rowsByIndex(db.posts, 'code', stats.map((s) => s.code));
     const byCode = new Map(found.map((p) => [p.code, p]));
     const updated: PostRow[] = [];
     const takenAt = stats.map((s) => {
@@ -104,7 +105,7 @@ export async function finalizeProfile(db: RadarDB, profileId: string, opts: Fina
 
     // Snapshots: uno por post tocado en este escaneo, solo si cambió respecto del último.
     const touched = posts.filter((p) => p.updatedAt >= opts.scanStartedAt);
-    const previous = await db.snapshots.where('postId').anyOf(touched.map((p) => p.id)).toArray();
+    const previous = await rowsByIndex(db.snapshots, 'postId', touched.map((p) => p.id));
     const last = new Map<string, SnapshotRow>();
     for (const s of previous) if ((last.get(s.postId)?.at ?? -Infinity) <= s.at) last.set(s.postId, s);
     const snaps: SnapshotRow[] = touched
@@ -145,9 +146,9 @@ export async function finalizeProfile(db: RadarDB, profileId: string, opts: Fina
 export async function deleteProfile(db: RadarDB, profileId: string): Promise<void> {
   await db.transaction('rw', [db.profiles, db.posts, db.metrics, db.snapshots, db.transcripts, db.clientProfiles, db.collectionPosts] as Dexie.Table[], async () => {
     const ids = (await db.posts.where('profileId').equals(profileId).primaryKeys()) as string[];
-    await db.snapshots.where('postId').anyOf(ids).delete();
+    await deleteByIndex(db.snapshots, 'postId', ids);
     await db.transcripts.bulkDelete(ids);
-    await db.collectionPosts.where('postId').anyOf(ids).delete();
+    await deleteByIndex(db.collectionPosts, 'postId', ids);
     await db.metrics.where('profileId').equals(profileId).delete();
     await db.posts.bulkDelete(ids);
     await db.clientProfiles.where('profileId').equals(profileId).delete();
