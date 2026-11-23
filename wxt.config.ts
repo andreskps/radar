@@ -4,7 +4,13 @@ import tailwindcss from '@tailwindcss/vite';
 // Build de pruebas (VITE_RADAR_DEV_BRIDGE=1): puente para herramientas automatizadas y recarga
 // automática. El service worker compara su sello con build-stamp.txt del disco y se recarga
 // solo cuando hay un build nuevo. El build normal no incluye nada de esto.
-const devBridge = (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.VITE_RADAR_DEV_BRIDGE === '1';
+const nodeProcess = (globalThis as { process?: { argv: string[]; env: Record<string, string | undefined> } }).process;
+const devBridge = nodeProcess?.env.VITE_RADAR_DEV_BRIDGE === '1';
+
+// Un NODE_ENV heredado del sistema (p. ej. "test") hace que el build use el JSX de desarrollo
+// (jsxDEV) con un React de producción, y el content script falla al montar la UI.
+// `wxt build` y `wxt zip` siempre compilan en modo producción.
+if (nodeProcess && ['build', 'zip'].includes(nodeProcess.argv[2] ?? '')) nodeProcess.env.NODE_ENV = 'production';
 const buildStamp = devBridge ? String(Date.now()) : '';
 
 // Permisos: ver docs/architecture.md §4.1
