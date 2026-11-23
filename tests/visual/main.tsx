@@ -54,6 +54,19 @@ const theme = params.get('theme') === 'light' ? 'light' : 'dark';
 // ?view=chip muestra el chip del perfil (con el selector de rango) en vez del panel; &new=1 = perfil sin escanear.
 const chipOnly = params.get('view') === 'chip';
 const store = createStore({ username: 'perfumeria.demo', panelOpen: true, theme, view: { username: 'perfumeria.demo', summary: { username: 'perfumeria.demo', followers: 120000, posts: 1000, reels: 600, medianReelViews: 9000, medianSample: 30, virals: 50, hiddenGems: 10, complete: true, lastScanAt: data.profile!.lastScanAt, scannedFrom: null }, job: null, posts: {} } });
+// ?scan=timeline|reels|finalize|paused|queued simula un escaneo sin terminar (franja del panel).
+const scan = params.get('scan');
+if (scan) {
+  const status = scan === 'paused' || scan === 'queued' ? scan : 'running';
+  const phase = scan === 'reels' || scan === 'finalize' ? scan : scan === 'queued' ? 'profile' : 'timeline';
+  const job = {
+    id: 1, username: 'perfumeria.demo', profileId: '1', mode: 'auto', status, phase, cursor: null, since: null,
+    read: 204, reelsRead: phase === 'timeline' ? 0 : 96, unmatchedReels: 0, pages: 17, rateLimitHits: 0, errorRetries: 0,
+    pauseReason: status === 'paused' ? 'rate_limit' : null, resumeAt: status === 'paused' ? now + 12 * 60_000 : null,
+    message: null, createdAt: now, startedAt: now, updatedAt: now,
+  } as const;
+  store.set({ view: { ...store.get().view!, job: job as never } });
+}
 const controller = createController(store);
 (globalThis as any).radarTiming = controller.timing;
 if (chipOnly) {

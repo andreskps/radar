@@ -7,6 +7,12 @@
   --color-radar-text: #e8eaf0;
   --color-radar-accent: #c6f432;
   --font-sans: Inter, ui-sans-serif, system-ui, sans-serif;
+  /* Barra indeterminada del escaneo en curso (ScanBanner). */
+  --animate-radar-scan: radar-scan 1.4s ease-in-out infinite;
+  @keyframes radar-scan {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(300%); }
+  }
 }
 
 /* Panel lateral: modo oscuro (por defecto) y claro (design.md §5). */

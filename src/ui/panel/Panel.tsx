@@ -12,6 +12,7 @@ import { ContentTab } from './ContentTab';
 import { TimeTab } from './TimeTab';
 import { WordsTab } from './WordsTab';
 import { ExportButtons } from './ExportButtons';
+import { ScanBanner, isScanActive } from './ScanBanner';
 
 type Tab = 'summary' | 'content' | 'time' | 'words';
 const TABS: { value: Tab; label: string }[] = [
@@ -68,7 +69,7 @@ export function Panel({ store, controller }: { store: Store; controller: Control
   }, [data, controller]);
 
   const job = view?.job ?? null;
-  const active = job && ['queued', 'running', 'paused'].includes(job.status);
+  const active = isScanActive(job);
   const profile = data?.profile ?? null;
 
   return (
@@ -84,9 +85,12 @@ export function Panel({ store, controller }: { store: Store; controller: Control
           </div>
           <div className="min-w-0 flex-1">
             <div className="truncate font-bold">@{username}</div>
-            <div className="text-[11px] text-[var(--p-muted)]">
+            <div className="flex items-center gap-[5px] text-[11px] text-[var(--p-muted)]">
+              {active && job.status !== 'paused' && <span className="size-[6px] shrink-0 animate-pulse rounded-full bg-radar-accent" />}
+              <span className="truncate">
               {profile?.followers != null ? `${compact(profile.followers)} seguidores · ` : ''}
               {active ? jobText(job) : profile ? `${profile.complete ? 'completo' : 'parcial'} · actualizado ${agoText(profile.lastScanAt)}` : 'sin escanear'}
+              </span>
             </div>
           </div>
           <button
@@ -130,6 +134,7 @@ export function Panel({ store, controller }: { store: Store; controller: Control
       </header>
 
       <div className="flex-1 overflow-y-auto p-[12px]" data-testid="radar-panel-body">
+        {active && <ScanBanner job={job} />}
         {error ? (
           <div className="text-[#F87171]">No se pudieron leer los datos: {error}</div>
         ) : !data ? (
@@ -141,7 +146,7 @@ export function Panel({ store, controller }: { store: Store; controller: Control
             <div className="mb-[10px] text-[11px] text-[var(--p-muted)]">
               {nf.format(filtered.length)} de {nf.format(data.posts.length)} publicaciones en el rango
             </div>
-            {tab === 'summary' && <SummaryTab summary={summary} />}
+            {tab === 'summary' && <SummaryTab summary={summary} scanning={active} />}
             {tab === 'content' && <ContentTab posts={filtered} />}
             {tab === 'time' && <TimeTab posts={filtered} theme={theme} />}
             {tab === 'words' && <WordsTab posts={filtered} />}

@@ -3,7 +3,7 @@ import { compact, multiplierText, percent } from '../format';
 import { TIER_ORDER, type Summary } from './analytics';
 import { BUCKET_STYLE, Card, Pill, SampleNote, StatCard, igUrl } from './parts';
 
-export function SummaryTab({ summary }: { summary: Summary }) {
+export function SummaryTab({ summary, scanning = false }: { summary: Summary; scanning?: boolean }) {
   const max = Math.max(1, ...Object.values(summary.tiers));
   return (
     <div className="flex flex-col gap-[10px]">
@@ -14,7 +14,15 @@ export function SummaryTab({ summary }: { summary: Summary }) {
         <StatCard label="Publicaciones por semana" stat={summary.perWeek} format={(v) => v.toFixed(1)} />
       </div>
 
-      <Card title="Posts por nivel" note={<SampleNote n={summary.count} />}>
+      <Card
+        title="Posts por nivel"
+        note={
+          <>
+            <SampleNote n={summary.count} />
+            {scanning && <div className="mt-[2px] text-[#F59E0B]">⏳ Escaneo sin terminar: estos números todavía van a cambiar.</div>}
+          </>
+        }
+      >
         <div className="flex flex-col gap-[4px]" data-testid="radar-tier-histogram">
           {TIER_ORDER.map((t) => (
             <div key={t} className="flex items-center gap-[8px] text-[11px]">
