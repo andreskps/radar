@@ -29,6 +29,11 @@ export default defineBackground(() => {
     onUpdate: (job) => void report(job),
   });
 
+  /** Arranca la cola sin dejar rechazos sin capturar: el trabajo sigue guardado y la alarma lo retoma. */
+  function startQueue() {
+    queue.ensureRunning().catch((e: unknown) => console.error('[Radar] La cola se detuvo por un error:', e));
+  }
+
   // ---- Contador del icono por pestaña (según el perfil abierto en cada una) ----
   async function tabProfiles(): Promise<Record<string, string>> {
     return ((await browser.storage.session.get(TABS_KEY))[TABS_KEY] as Record<string, string> | undefined) ?? {};
@@ -104,8 +109,8 @@ export default defineBackground(() => {
   async function handle(msg: WorkerRequest, tabId: number | undefined): Promise<unknown> {
     switch (msg.type) {
       case 'scan/enqueue': {
-        const job = await queue.enqueue(msg.username, msg.mode);
-        void queue.ensureRunning();
+        const job = await queue.enqueue(msg.username, msg.mode, msg.range);
+        startQueue();
         void report(job);
         return job;
       }
@@ -115,7 +120,7 @@ export default defineBackground(() => {
         return queue.pause(msg.id);
       case 'scan/resume':
         await queue.resume(msg.id);
-        void queue.ensureRunning();
+        startQueue();
         return;
       case 'scan/cancel':
         return queue.cancel(msg.id);
@@ -143,7 +148,7 @@ export default defineBackground(() => {
   });
 
   browser.alarms.onAlarm.addListener((alarm) => {
-    if (alarm.name === WAKE_ALARM || alarm.name === WATCHDOG_ALARM) void queue.ensureRunning();
+    if (alarm.name === WAKE_ALARM || alarm.name === WATCHDOG_ALARM) startQueue();
   });
 
   // Build de pruebas: recargarse solo cuando hay un build nuevo en disco, y recargar las
@@ -167,10 +172,12 @@ export default defineBackground(() => {
   void browser.action.setBadgeText({ text: '' });
 
   // Al arrancar el service worker (Chrome recién abierto o reactivado): retomar lo pendiente.
-  void queue.ensureRunning();
+  startQueue();
 
   // Clic en el icono de la extensión → abre el Centro en una pestaña.
-  browser.action.onClicked.addListener(() => {
-    browser.tabs.create({ url: browser.runtime.getURL('/center.html') });
+  browser.action.onClicked.addListener((tab) => {
+    browser.tabs
+      .create({ windowId: tab.windowId, url: browser.runtime.getURL('/center.html') })
+      .catch((e: Error) => console.error('[Radar] No se pudo abrir el Centro:', e.message));
   });
 });

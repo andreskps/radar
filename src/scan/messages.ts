@@ -1,6 +1,6 @@
 // Mensajes entre service worker, content script y Centro (architecture.md §4.2).
 import type { IgProfile } from '../ig/types';
-import type { ProfileRow, ScanJobRow, ScanMode } from '../db/schema';
+import type { ProfileRow, ScanJobRow, ScanMode, ScanRange } from '../db/schema';
 
 /** Service worker → content script: una petición a Instagram. */
 export type FetchRequest =
@@ -10,7 +10,7 @@ export type FetchRequest =
 
 /** Content script, panel o Centro → service worker. */
 export type WorkerRequest =
-  | { type: 'scan/enqueue'; username: string; mode?: ScanMode }
+  | { type: 'scan/enqueue'; username: string; mode?: ScanMode; range?: ScanRange | null }
   | { type: 'scan/jobs' }
   | { type: 'scan/pause' | 'scan/resume' | 'scan/cancel'; id?: number }
   | { type: 'db/profile'; username: string }

@@ -1,7 +1,7 @@
 // Coordina lo que se ve sobre Instagram: detecta el perfil de la URL (Instagram cambia de página
 // sin recargar), pide sus datos al service worker, sigue el avance del escaneo y guarda el
 // interruptor de etiquetas.
-import type { ScanMode } from '../db/schema';
+import type { ScanMode, ScanRange } from '../db/schema';
 import type { ProfileView } from '../db/views';
 import type { ProgressMessage, WorkerRequest } from '../scan/messages';
 import { profileFromPath } from './route';
@@ -95,10 +95,11 @@ export function createController(store: Store) {
       timing.painted = count;
       if (count > 0 && timing.paintMs === null && store.get().username) timing.paintMs = Math.round(performance.now() - routeStart);
     },
-    async scan(mode: ScanMode = 'auto') {
+    /** Sin rango: el escaneo de siempre (todo la primera vez, lo nuevo después). */
+    async scan(mode: ScanMode = 'auto', range: ScanRange | null = null) {
       const username = store.get().username;
       if (!username) return;
-      await toWorker({ type: 'scan/enqueue', username, mode });
+      await toWorker({ type: 'scan/enqueue', username, mode, range });
     },
     async pause() {
       const job = store.get().view?.job;

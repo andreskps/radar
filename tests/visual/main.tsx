@@ -6,6 +6,7 @@ import type { PanelData, PanelPost } from '@/db/views';
 import { createStore } from '@/ui/store';
 import { createController } from '@/ui/controller';
 import { Panel } from '@/ui/panel/Panel';
+import { ProfileChip } from '@/entrypoints/instagram.content/ProfileChip';
 
 const DAY = 86_400_000;
 const now = Date.now();
@@ -38,13 +39,27 @@ const data: PanelData = {
 
 const mem: Record<string, unknown> = {};
 (globalThis as any).browser = {
-  runtime: { sendMessage: async () => ({ ok: true, data }) },
+  runtime: {
+    sendMessage: async (msg: { type: string }) => {
+      // Lo último que se pidió al service worker (para revisar el rango elegido en el chip).
+      (globalThis as any).radarLastMessage = msg;
+      return { ok: true, data };
+    },
+  },
   storage: { local: { get: async () => mem, set: async (o: object) => Object.assign(mem, o) } },
 };
 
-const theme = new URLSearchParams(location.search).get('theme') === 'light' ? 'light' : 'dark';
+const params = new URLSearchParams(location.search);
+const theme = params.get('theme') === 'light' ? 'light' : 'dark';
+// ?view=chip muestra el chip del perfil (con el selector de rango) en vez del panel; &new=1 = perfil sin escanear.
+const chipOnly = params.get('view') === 'chip';
 const store = createStore({ username: 'perfumeria.demo', panelOpen: true, theme, view: { username: 'perfumeria.demo', summary: { username: 'perfumeria.demo', followers: 120000, posts: 1000, reels: 600, medianReelViews: 9000, medianSample: 30, virals: 50, hiddenGems: 10, complete: true, lastScanAt: data.profile!.lastScanAt, scannedFrom: null }, job: null, posts: {} } });
 const controller = createController(store);
-controller.setPanelOpen(true);
 (globalThis as any).radarTiming = controller.timing;
-ReactDOM.createRoot(document.getElementById('root')!).render(<Panel store={store} controller={controller} />);
+if (chipOnly) {
+  store.set({ panelOpen: false, ...(params.get('new') ? { view: { ...store.get().view!, summary: null } } : {}) });
+  ReactDOM.createRoot(document.getElementById('root')!).render(<ProfileChip store={store} controller={controller} />);
+} else {
+  controller.setPanelOpen(true);
+  ReactDOM.createRoot(document.getElementById('root')!).render(<Panel store={store} controller={controller} />);
+}

@@ -74,6 +74,11 @@ export interface CollectionPostRow {
 }
 
 export type ScanMode = 'auto' | 'full';
+/**
+ * Qué parte del perfil recorrer, elegida por el usuario. Sin rango se usa `mode`.
+ * all: todo · days: los últimos N días · dates: entre dos fechas (ms, `to` incluido).
+ */
+export type ScanRange = { kind: 'all' } | { kind: 'days'; days: number } | { kind: 'dates'; from: number; to: number };
 export type ScanPhase = 'profile' | 'timeline' | 'reels' | 'finalize';
 export type ScanStatus = 'queued' | 'running' | 'paused' | 'done' | 'error' | 'cancelled';
 
@@ -83,6 +88,8 @@ export interface ScanJobRow {
   profileId: string | null;
   /** auto: incremental si el perfil ya tiene un escaneo completo · full: "actualizar todo". */
   mode: ScanMode;
+  /** Rango elegido por el usuario. Si falta (trabajos viejos o "lo nuevo"), manda `mode`. */
+  range?: ScanRange | null;
   status: ScanStatus;
   phase: ScanPhase;
   cursor: string | null;

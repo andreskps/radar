@@ -2,7 +2,7 @@
 // después de cada paso con su cursor, así que si Chrome se cierra se reanuda en la misma página.
 import type { IgFailure, IgPost, IgProfile, IgReelStats, IgResult, Page } from '../ig/types';
 import { applyReelStats, finalizeProfile, saveProfile, savePosts } from '../db/repo';
-import type { RadarDB, ScanJobRow, ScanMode } from '../db/schema';
+import type { RadarDB, ScanJobRow, ScanMode, ScanRange } from '../db/schema';
 
 /** Quien hace las peticiones (en la extensión: el content script de una pestaña de Instagram). */
 export interface Fetcher {
@@ -21,11 +21,39 @@ export const RATE_LIMIT_PAUSE_MS = [15 * MIN, 60 * MIN] as const;
 export const MAX_ERROR_RETRIES = 3;
 export const ERROR_RETRY_MS = MIN;
 
-export function newJob(username: string, mode: ScanMode, now: number): ScanJobRow {
+/** Deja un rango válido: días enteros ≥ 1 y fechas en orden. `null` si no se puede usar. */
+export function normalizeRange(range: ScanRange | null | undefined): ScanRange | null {
+  if (!range) return null;
+  if (range.kind === 'all') return { kind: 'all' };
+  if (range.kind === 'days') {
+    const days = Math.round(range.days);
+    return Number.isFinite(days) && days >= 1 ? { kind: 'days', days } : null;
+  }
+  if (!Number.isFinite(range.from) || !Number.isFinite(range.to)) return null;
+  return { kind: 'dates', from: Math.min(range.from, range.to), to: Math.max(range.from, range.to) };
+}
+
+/** Fecha de corte (ms) del rango: el escaneo para al pasar de ella. `null` = hasta el primer post. */
+export function rangeSince(range: ScanRange, now: number): number | null {
+  if (range.kind === 'all') return null;
+  if (range.kind === 'days') return now - range.days * DAY;
+  return range.from;
+}
+
+/** El post entra en el rango elegido (sin rango, todo entra). */
+export function inRange(takenAt: number, job: Pick<ScanJobRow, 'range' | 'since'>): boolean {
+  const range = job.range;
+  if (!range || range.kind === 'all') return true;
+  if (job.since !== null && takenAt < job.since) return false;
+  return range.kind !== 'dates' || takenAt <= range.to;
+}
+
+export function newJob(username: string, mode: ScanMode, now: number, range?: ScanRange | null): ScanJobRow {
   return {
     username: username.replace(/^@/, '').trim().toLowerCase(),
     profileId: null,
     mode,
+    range: normalizeRange(range),
     status: 'queued',
     phase: 'profile',
     cursor: null,
@@ -91,8 +119,13 @@ export async function runStep(db: RadarDB, job: ScanJobRow, fetcher: Fetcher, no
     if (res.data.isPrivate) return { ...job, status: 'error', message: `@${res.data.username} es privado`, updatedAt: now, finishedAt: now };
     const before = await db.profiles.get(res.data.id);
     await saveProfile(db, res.data);
-    // Incremental: lo nuevo desde el post más reciente guardado y lo de los últimos 30 días.
-    const since = job.mode === 'auto' && before?.complete ? Math.min(now - RECENT_REFRESH_MS, before.scannedTo ?? now) : null;
+    // Con rango elegido, manda el rango. Si no, incremental: lo nuevo desde el post más reciente
+    // guardado y lo de los últimos 30 días.
+    const since = job.range
+      ? rangeSince(job.range, now)
+      : job.mode === 'auto' && before?.complete
+        ? Math.min(now - RECENT_REFRESH_MS, before.scannedTo ?? now)
+        : null;
     return ok(job, now, { profileId: res.data.id, username: res.data.username, since, phase: 'timeline', cursor: null });
   }
 
@@ -103,11 +136,13 @@ export async function runStep(db: RadarDB, job: ScanJobRow, fetcher: Fetcher, no
     const res = await fetcher.timeline(profile, job.cursor);
     if (!res.ok) return applyFailure(job, res, now);
     const { items, nextCursor } = res.data;
-    await savePosts(db, items, now);
+    // Con rango elegido solo se guarda lo que cae dentro (lo más nuevo que "hasta" se recorre igual).
+    const kept = items.filter((p) => inRange(p.takenAt, job));
+    await savePosts(db, kept, now);
     // Los fijados salen arriba aunque sean viejos: se mira el último de la página.
     const reachedOld = job.since !== null && items.length > 0 && items.at(-1)!.takenAt < job.since;
     const next = reachedOld ? null : nextCursor;
-    return ok(job, now, { read: job.read + items.length, ...(next ? { cursor: next } : { phase: 'reels', cursor: null }) });
+    return ok(job, now, { read: job.read + kept.length, ...(next ? { cursor: next } : { phase: 'reels', cursor: null }) });
   }
 
   if (job.phase === 'reels') {

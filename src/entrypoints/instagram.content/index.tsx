@@ -6,7 +6,7 @@ import { useSyncExternalStore } from 'react';
 import type { Store } from '@/ui/store';
 import { createClient, fetchProfile, fetchReelsPage, fetchTimelinePage, readProfileContent, type IgClient, type ReadAllOptions } from '@/ig';
 import { isFetchRequest, type FetchRequest, type ProgressMessage, type WorkerRequest } from '@/scan/messages';
-import type { ScanMode } from '@/db/schema';
+import type { ScanMode, ScanRange } from '@/db/schema';
 import { createStore } from '@/ui/store';
 import { createController, type Controller } from '@/ui/controller';
 import { startBadgeLayer } from '@/ui/badges/layer';
@@ -30,9 +30,21 @@ function exposeConsoleApi(client: IgClient, controller: Controller) {
       console.info(`[Radar] @${username}: ${result.posts.length} posts en ${result.pages} páginas, ${Math.round((performance.now() - t0) / 1000)} s`, result.outcome);
       return result;
     },
-    /** Escanear y guardar en la base (Fase 3). `full: true` = "actualizar todo". */
-    scan: (username: string, opts: { full?: boolean } = {}) =>
-      toWorker({ type: 'scan/enqueue', username, mode: (opts.full ? 'full' : 'auto') as ScanMode }),
+    /**
+     * Escanear y guardar en la base (Fase 3). `full: true` = "actualizar todo".
+     * `days: 30` = últimos 30 días · `from`/`to` ('2026-01-31' o ms) = entre fechas · `all: true` = todo.
+     */
+    scan: (username: string, opts: { full?: boolean; all?: boolean; days?: number; from?: string | number; to?: string | number } = {}) => {
+      const toMs = (d: string | number, end: boolean) => (typeof d === 'number' ? d : new Date(`${d}T${end ? '23:59:59.999' : '00:00:00'}`).getTime());
+      const range: ScanRange | null = opts.days
+        ? { kind: 'days', days: opts.days }
+        : opts.from !== undefined
+          ? { kind: 'dates', from: toMs(opts.from, false), to: opts.to !== undefined ? toMs(opts.to, true) : Date.now() }
+          : opts.all
+            ? { kind: 'all' }
+            : null;
+      return toWorker({ type: 'scan/enqueue', username, mode: (opts.full ? 'full' : 'auto') as ScanMode, range });
+    },
     jobs: () => toWorker({ type: 'scan/jobs' }),
     pause: (id?: number) => toWorker({ type: 'scan/pause', id }),
     resume: (id?: number) => toWorker({ type: 'scan/resume', id }),

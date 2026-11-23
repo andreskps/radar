@@ -33,7 +33,11 @@ export function createTabFetcher(): Fetcher {
       // Las pestañas abiertas antes de instalar o recargar la extensión no tienen el content script.
       if (tab.id !== undefined && (await ping(tab.id))) return (tabId = tab.id);
     }
-    const created = await browser.tabs.create({ url: 'https://www.instagram.com/', active: false });
+    // Sin windowId, Chrome usa la "ventana actual", que no existe si el navegador quedó en segundo
+    // plano sin ventanas ("No current window"). No se abre una ventana por cuenta propia.
+    const [win] = await browser.windows.getAll({ windowTypes: ['normal'] });
+    if (win?.id === undefined) return null;
+    const created = await browser.tabs.create({ windowId: win.id, url: 'https://www.instagram.com/', active: false });
     if (created.id === undefined) return null;
     const until = Date.now() + READY_TIMEOUT_MS;
     while (Date.now() < until) {
@@ -45,8 +49,13 @@ export function createTabFetcher(): Fetcher {
 
   async function call<T>(msg: FetchRequest): Promise<IgResult<T>> {
     for (let attempt = 0; attempt < 2; attempt++) {
-      const id = await findTab();
-      if (id === null) return noTab('no cargó a tiempo');
+      let id: number | null;
+      try {
+        id = await findTab();
+      } catch (e) {
+        return noTab((e as Error).message);
+      }
+      if (id === null) return noTab('no hay una ventana de Chrome abierta o no cargó a tiempo');
       try {
         return await send<IgResult<T>>(id, msg);
       } catch (e) {

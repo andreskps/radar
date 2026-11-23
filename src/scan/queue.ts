@@ -1,7 +1,7 @@
 // Cola de escaneo con ritmo seguro (architecture.md §5.1). Una sola petición a Instagram a la vez.
 // Todo el estado vive en la tabla scanJobs: si el service worker muere, otra instancia de la cola
 // retoma desde el último paso guardado.
-import type { RadarDB, ScanJobRow, ScanMode } from '../db/schema';
+import type { RadarDB, ScanJobRow, ScanMode, ScanRange } from '../db/schema';
 import { needsRequest, newJob, runStep, type Fetcher } from './step';
 
 export interface Pacing {
@@ -48,8 +48,8 @@ export class ScanQueue {
   }
 
   /** Agrega un perfil a la cola. Si ya está en la cola, devuelve ese trabajo. */
-  async enqueue(username: string, mode: ScanMode = 'auto'): Promise<ScanJobRow> {
-    const job = newJob(username, mode, this.now());
+  async enqueue(username: string, mode: ScanMode = 'auto', range?: ScanRange | null): Promise<ScanJobRow> {
+    const job = newJob(username, mode, this.now(), range);
     const existing = await this.activeJobs();
     const same = existing.find((j) => j.username === job.username);
     if (same) return same;
